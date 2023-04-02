@@ -3,7 +3,7 @@ import typing
 import anyio
 
 from starlette.background import BackgroundTask
-from starlette.requests import Request
+from starlette.requests import Request, ClientDisconnect
 from starlette.responses import ContentStream, Response, StreamingResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -82,6 +82,8 @@ class BaseHTTPMiddleware:
             except anyio.EndOfStream:
                 if app_exc is not None:
                     raise app_exc
+                if await request.is_disconnected():
+                    raise ClientDisconnect("Client disconnect while processing the request")
                 raise RuntimeError("No response returned.")
 
             assert message["type"] == "http.response.start"
